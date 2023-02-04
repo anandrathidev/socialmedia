@@ -19,7 +19,7 @@ from pyfacebook import GraphAPI
 USER_ID = "704236071444139"  # Your App ID
 PAGE_ID = "106825752298751" # Test app
 APP_ID = "551781136898046" # Test app
-APP_SECRET = "3c2b38b140d3483c03d7bb5d9acdb8fe"  # Your App secret
+
 
 
 
