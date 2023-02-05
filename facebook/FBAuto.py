@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Sun Feb  5 01:48:21 2023
+
+@author: ananduser
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Wed Feb  1 21:16:00 2023
 
 @author: arathi
@@ -15,7 +22,9 @@ from pyfacebook import GraphAPI
 #  "name": "Ex-Muslim Murtad Apostate India",
 #  "id": "106825752298751"
 #}
-704236071444139
+
+TAGS = "#EXMuslim  #ExMuslimRevolution #ExMuslim #islam #islamicpost #muslim #islamicquotes #Islamophobia #Secularism #democracy #usa #Pakistan #Muhammad #Allah #humanity  #earth #saudiarabia #INDIA #indianfood #woman #womanownedbusiness #womanartist #female #femaleowned #womanrights #genocide #Kashmir #islamicpost #Quran #hadithoftheday #hadithoftheprophet #hadithquotes"
+
 USER_ID = "704236071444139"  # Your App ID
 PAGE_ID = "106825752298751" # Test app
 APP_ID = "551781136898046" # Test app
@@ -23,9 +32,9 @@ APP_ID = "551781136898046" # Test app
 
 
 
-# Your Access Token EAAH1146olZC4BAM23tbtvwI8vCOFAJZBsfDRfZAq6bJGMhDY4wrxflf4eeLVATUBlKtOxmnGkZAaacDwzAoR6MddXi9jjjYq83N91kfUEZCdjTHNus8JaBL62M7fhIX9r3wKB51VGmdWkLSH7hRrtDh0UuEO1upVsmtIzoinwIarKg9ZC3XVXosfvT69fhrYfj2G4VKhnGFJltvTpW0QQBlZCnxbTom2imMmeV6IZApIcHfmLsIFHIJb
-USER_ACCESS_TOKEN = "EAAH1146olZC4BAFh70ZBZAvXDM9BdMKLzsIAGO05UHu6dyCoaTdz8nzt3QdKEFIuM6s430tvvYZAr5aYhHnEagkq0AoCu1AKY6STWJAUlozkjp8ppBPHLMt30AtuiA1TRJkhnIH13GfJiAIAeZBS1pi9cBEcjZCZAr0L1fJL66xxGDkl4U7l8ZAO"
-PAGE_ACCESS_TOKEN = "EAAH1146olZC4BALr8BZA3wbSkf9fJjdy0iu03IrAtWAzESkTtvdIR67bdfztX3ggvZAeSTZAtRNZAiaZBZAezuZAOfnVeD6O01kQNP0PTZANdRCjjtmhxisyLtZA8MYkZCB2EDrAslZBRxKG3lNOP9k5ZAmoUipdWthjyuAuIODOTRAMvJLJssU3dE3Vu"
+
+USER_ACCESS_TOKEN = ""
+PAGE_ACCESS_TOKEN = ""
 """
 Page ID	106825752298751 : Ex-Muslim Murtad Apostate India
 App-Scoped User ID 704236071444139 : Kumar Ameet
@@ -69,18 +78,33 @@ def handler(page_id):
 def get_account_info():
     api = GraphAPI(app_id=None, app_secret=None, access_token=USER_ACCESS_TOKEN)
     result = api.get_object(object_id=f"{USER_ID}", fields="accounts" )
-    print(result)
+    print(f"account_info: {result}\n")
 
 def get_page_settings():
     api = GraphAPI(app_id=None, app_secret=None, access_token=PAGE_ACCESS_TOKEN)
     result = api.get_object(object_id=f"{PAGE_ID}", fields="settings" )
-    print(result)
+    print(f"Settings: {result}\n")
 
+def post_user_story(message):
+    TAGS = "#EXMuslim  #ExMuslimRevolution #ExMuslim #islam #islamicpost #muslim #islamicquotes #Islamophobia #Secularism #democracy #usa #Pakistan #Muhammad #Allah #humanity  #earth #saudiarabia #INDIA #indianfood #woman #womanownedbusiness #womanartist #female #femaleowned #womanrights #genocide #Kashmir #islamicpost #Quran #hadithoftheday #hadithoftheprophet #hadithquotes"
+    amessage=f"\n {TAGS}"
+    api = GraphAPI(app_id=None, app_secret=None, access_token=PAGE_ACCESS_TOKEN)
+    # post_result = api.post_object(object_id=f"{PAGE_ID}", connection="feed?message=Smart video calling to fit every family &link=https://portal.facebook.com/products/")
+    post_result = api.post_object(object_id=f"{PAGE_ID}", 
+                                  connection="feed",                                   
+                                  params={f"message":message, 
+                                          "link":"https://www.youtube.com/watch?v=Mn7B9lNB-CA"}
+                                  )
+    print( f"post_result {post_result}\n " )
 
+import datetime
 if __name__ == "__main__":
     #handler(page_id="106825752298751")
-    get_account_info()
-    get_page_settings()
+    #get_account_info()
+    #get_page_settings()
+    sdt = datetime.datetime.now()
+    amessage=f"Auto {sdt} open discussion with ExMuslim-Darashikoh\n https://www.youtube.com/watch?v=Mn7B9lNB-CA \n "
+    post_user_story(amessage)
     
 # Get page access     me?fields=accounts USERID = 704236071444139 PAGE_ID = 106825752298751 
 
