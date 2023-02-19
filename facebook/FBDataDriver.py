@@ -8,6 +8,8 @@ Created on Sat Feb 11 15:54:40 2023
 # selenium-driver.py
 import json
 from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+
 from pathlib import Path
 import time
 import random
@@ -15,6 +17,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+import time
+
 class SeleniumDriver(object):
     def __init__(
         self,
@@ -177,10 +181,8 @@ def managed_page(driver):
 
 
 # liked pages
-def getPage_id(driver, pageurl):
-    
-    driver.get(pageurl)
-    scroll_down(driver, 1)
+def getPage_id(driver, pageurl): 
+    driver.get(pageurl)   
     property_id = driver.find_element(By.XPATH, '//*[@property="al:android:url"]')
     print(property_id)
     print(property_id.get_attribute("content"))
@@ -192,8 +194,8 @@ def getPage_id(driver, pageurl):
 
 
 # liked groups
-def managed_page(driver):
-    like_page_url = 'https://www.facebook.com/ExMuslimMurtadApostateIndia/likes'
+def managed_page(driver, like_page_url):
+    #like_page_url = 'https://www.facebook.com/ExMuslimMurtadApostateIndia/likes'
     driver.get(like_page_url)
     scroll_down(driver, 1)
     like_pages = driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[1]/div/div[3]/div/div/div/div[1]/div[1]/div/div/div[4]/div/div/div/div[1]/div/div/div/div/div[3]')    
@@ -204,6 +206,7 @@ def managed_page(driver):
     for ele in like_pages_list:
         try:
             href = ele.get_attribute("href")
+            print(href)
             href_list.append(href)
             pageid = getPage_id(driver=driver, pageurl=href)
             id_list.append(pageid)
@@ -214,7 +217,7 @@ def managed_page(driver):
     return href_list,id_list
 
 # like pages
-def like_page(driver):
+def like_page(driver, ):
     like_page_url = 'https://www.facebook.com/pages/?category=top&ref=bookmarks'
     driver.get(like_page_url)
     scroll_down(driver, 1)
@@ -228,6 +231,67 @@ def like_page(driver):
             print(e)
         random_wait(3, 7)
 
+
+def switch_role_to_page(driver, my_pprofile):
+    #div aria-label="Account controls and settings" role="navigation"    
+    driver.get(like_page_url)
+    html = driver.find_element(By.TAG_NAME, 'html')
+    for i in range(2):
+        html.send_keys(Keys.PAGE_DOWN)
+        time.sleep(2)
+    profile_control_ele = driver.find_element(By.XPATH, 
+                                     '//*[@aria-label="Your profile"]')
+    profile_control_ele.click()
+    time.sleep(1)
+    see_all_profiles_ele = driver.find_element( By.XPATH, 
+                     '//*[contains(text(),"See all profiles")]' )
+
+    try:
+        see_all_profiles_ele = driver.find_element( By.XPATH, 
+                     '//*[contains(text(),"See all profiles")]' )
+        see_all_profiles_ele.click()
+        my_profile_ele = driver.find_element( By.XPATH, 
+                     f'//span[contains(text(), "{my_pprofile}" )]' )
+        my_profile_ele.click()
+    except Exception as e:
+        print(f"Profile {my_pprofile} not found: {e}")
+    
+
+# get sharable grupus url
+def get_share_to_groups(driver, like_page_url):
+    #//div[@aria-label="Send this to friends or post it on your Timeline."]
+    #driver.get(like_page_url)
+    html = driver.find_element(By.TAG_NAME, 'html')
+    for i in range(2):
+        html.send_keys(Keys.PAGE_DOWN)
+        time.sleep(1)
+    return
+    
+    share_button_list = driver.find_elements(By.XPATH, 
+                                     '//div[@aria-label="Send this to friends or post it on your Timeline."]')    
+    print(f"1 share_button_list = {share_button_list}")
+    if(len(share_button_list)<1):
+        html = driver.find_element(By.TAG_NAME, 'html')
+        for i in range(2):
+            html.send_keys(Keys.PAGE_DOWN)
+            time.sleep(3)
+        share_button_list = driver.find_elements(By.XPATH, 
+           '//div[@aria-label="Send this to friends or post it on your Timeline."]') 
+        print(f"2 share_button_list = {share_button_list}")
+    if len(share_button_list)>0:
+        wait = WebDriverWait(driver, 30) 
+        share_button_list[0].send_keys(Keys.ENTER)
+        #share_button_list[0].click()
+        #driver.switch_to.frame(share_button_list[0]);
+        share_to_group = driver.find_element( By.XPATH, 
+                 '//span[contains(text(),"Share to a group")]' )
+        share_to_group.click()
+        share_group_list = driver.find_element(By.XPATH, 
+              '//div[@role="listitem" and @role="button"]' )
+        for group_name in share_group_list:
+            print( f"baseURI {group_name.baseURI}" )
+# //div[@role="listitem" and @data-visualcompletion="ignore-dynamic"]'
+# div data-visualcompletion="ignore-dynamic" role="listitem"
 
 if __name__ == '__main__':
     # extract accounts from accounts file
@@ -243,13 +307,18 @@ if __name__ == '__main__':
         else:
             print("Not logged in. Login")
             fb_login(driver, username, password)
-            
-        r,i = managed_page(driver)
-                
+
+        like_page_url = 'https://www.facebook.com/ExMuslimMurtadApostateIndia'    
+        #r,i = managed_page(driver, like_page_url)
+        switch_role_to_page(driver, my_pprofile="Ex-Muslim Murtad Apostate India")
+        get_share_to_groups(driver, like_page_url)
+        #print(i)        
         #getPage_id(driver=driver, pageurl = "https://www.facebook.com/groups/VaisnavaHumour/" )
         #scroll_down(driver, 2)
         #like_post(driver)
         #add_friend(driver)
         #like_page(driver)
         #selenium_object.quit()
+        
+        
         
