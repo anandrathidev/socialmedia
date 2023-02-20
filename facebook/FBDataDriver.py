@@ -346,9 +346,13 @@ def create_post(driver, post):
     more_opts.click()    
     #<div aria-describedby="placeholder-40iv2" aria-label="Write something..." 
     # class="notranslate _5rpu" contenteditable="true" role="textbox" spellcheck="true" tabindex="0" style="outline: none; user-select: text; white-space: pre-wrap; overflow-wrap: break-word;"><div data-contents="true"><div class="x1e56ztr" data-block="true" data-editor="40iv2" data-offset-key="25r7f-0-0"><div data-offset-key="25r7f-0-0" class="_1mf _1mj"><span data-offset-key="25r7f-0-0"><br data-text="true"></span></div></div></div></div>    
-    xpath_str = '//div[@role="textbox" and @spellcheck="true"]'
+    #<div class="x1e56ztr" data-block="true" data-editor="bh6pd" data-offset-key="fbusl-0-0"><div data-offset-key="fbusl-0-0" class="_1mf _1mj"><span data-offset-key="fbusl-0-0"><br data-text="true"></span></div></div>    
+    xpath_str = '//div[@data-block="true"]'
+  
     wait.until(EC.presence_of_element_located((By.XPATH, xpath_str)))
     post_ele = driver.find_element( By.XPATH, xpath_str )
+    time.sleep(0.5)
+    post_ele.click()
     post_ele.send_keys(Keys.SPACE ) ##Press ENTER
     post_ele.send_keys(post)
     post_ele.send_keys(Keys.ENTER) ### Press ENTER to post the content on facebook
@@ -356,6 +360,7 @@ def create_post(driver, post):
     xpath_str = '//div[@aria-label="Post" and @role="button"]'
     post_button_ele = driver.find_element( By.XPATH, xpath_str )
     post_button_ele.click()
+    time.sleep(2)
     
 if __name__ == '__main__':
     # extract accounts from accounts file
@@ -389,4 +394,28 @@ if __name__ == '__main__':
         #selenium_object.quit()
         
         
-        
+"""
+  File C:\work\social\FBDataDriver.py:386
+    open_page(driver, url)
+
+  File C:\work\social\FBDataDriver.py:138 in open_page
+    wait.until(EC.presence_of_element_located((By.TAG_NAME, 'html')))
+
+  File ~\anaconda3\lib\site-packages\selenium\webdriver\support\wait.py:86 in until
+    value = method(self._driver)
+
+  File ~\anaconda3\lib\site-packages\selenium\webdriver\support\expected_conditions.py:69 in _predicate
+    return driver.find_element(*locator)
+
+  File ~\anaconda3\lib\site-packages\selenium\webdriver\remote\webdriver.py:830 in find_element
+    return self.execute(Command.FIND_ELEMENT, {"using": by, "value": value})["value"]
+
+  File ~\anaconda3\lib\site-packages\selenium\webdriver\remote\webdriver.py:440 in execute
+    self.error_handler.check_response(response)
+
+  File ~\anaconda3\lib\site-packages\selenium\webdriver\remote\errorhandler.py:244 in check_response
+    raise exception_class(message, screen, stacktrace, alert_text)  # type: ignore[call-arg]  # mypy is not smart enough here
+
+UnexpectedAlertPresentException: unexpected alert open: {Alert text : }
+  (Session info: chrome=110.0.5481.104)
+"""        
