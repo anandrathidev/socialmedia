@@ -1,51 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Feb  6 06:10:28 2023
+Created on Wed Feb 22 23:00:56 2023
 
-@author: arathi
+@author: ananduser
 """
 
 import scrapetube
 import sys
 import requests
 import html_to_json
+import sqlite3
+from datetime import datetime
+import dateutil
+import configparser
+import json 
+config = configparser.ConfigParser()
+try:
+    config.read('youtube.ini')
+except:
+    print("cant read youtube.ini or not found")
+    quit()
 
-path = '_list.txt'
-
-channel_List = [
-   "www.youtube.com/@Sachwala" ,
-   "www.youtube.com/@ZafarHeretic" ,
-   "www.youtube.com/@ExMuslimSahil" ,
-   "www.youtube.com/@ExMuslimSameer" ,
-   "www.youtube.com/@faizalam-theroasterkid" ,
-   "www.youtube.com/@Deenibhai" ,
-   "www.youtube.com/@exmansari" ,
-   "www.youtube.com/@exmuslim_yasmin_khan" ,
-   "www.youtube.com/@apostateimam-the12thimamwh98" ,
-   "www.youtube.com/@munnabhaiexmuslimofficial" ,
-   "www.youtube.com/@AdamSeekerUrdu" ,
-   "www.youtube.com/@sajidimam7563" ,
-   "www.youtube.com/@iamhaqwalaexmuslim" ,
-   "www.youtube.com/@alishahex-muslim6723" ,
-   "www.youtube.com/@SachwalaAbdulHamid" ,
-   "www.youtube.com/@rihanexmuslim8021" ,
-   "www.youtube.com/@AuthenticXMuslim" ,
-   "www.youtube.com/@exmuslimbharat2303" ,
-   "www.youtube.com/@UncompromisingIndia" ,
-   "www.youtube.com/@littlefaizu-thehumanistmur4206" ,
-   "www.youtube.com/@imanwalakafir6422" ,
-   "www.youtube.com/@exmuslimsuhail" ,
-   "www.youtube.com/@sulemanijalebiya" ,
-   "www.youtube.com/@exmuslimtahmin" ,
-   "www.youtube.com/@exmuslimangel" ,
-   "www.youtube.com/@haqookseeker1305" ,
-   "www.youtube.com/@Exmuslimdarashikoh" ,
-   "www.youtube.com/@bengaliex-muslim"
-    ]
-
-channel_List = [
-   "https://www.youtube.com/@ExMuslimSameer" 
-   ]
+logpath = config['DEFAULT']['logpath']
+channel_List = json.loads(config['channels']['channels'])
 
 def get_channelID_from_meta(meta):
     for attrib in meta:
@@ -53,7 +30,7 @@ def get_channelID_from_meta(meta):
         if 'itemprop' in attrib['_attributes']:
            #print(f"_attributes {attrib}" )
            if attrib['_attributes']['itemprop'] == 'channelId':
-               print(f"content {attrib['_attributes']['content']}" )
+               print(f"channel id {attrib['_attributes']['content']}" )
                return  attrib['_attributes']['content']
            
     return  None
@@ -65,6 +42,72 @@ def get_channelurl_from_meta(meta):
                return  attrib['_attributes']['content']
     return  None
     
+class YoutubeData:
+    def __init__(self, dbname):
+        self.dbname = dbname
+
+    def connect(self,):
+        self.con = sqlite3.connect(self.dbname)
+        
+    def commit(self,):
+        self.con.commit()
+
+    def close(self,):
+        self.con.close()
+        
+        
+    def create_youtube_table(self, ):
+        self.connect()
+        cur = self.con.cursor()        
+        try:
+            cur.execute("CREATE TABLE youtube ( \
+                    name TEXT, \
+                    channel TEXT, \
+                    videoid TEXT, \
+                    title TEXT, \
+                    isposted INTEGER, \
+                    pubdate TEXT, \
+                    postdate TEXT, \
+                    UNIQUE(videoid) )") 
+            
+        except Exception as e:
+            print(f"CREATE TABLE youtube failed error {e}")
+        self.con.commit()
+        self.close()
+
+    def Insert(self, 
+               name,
+               channel, 
+               videoid, 
+               title, 
+               pubdate, 
+               postdate ):
+        self.connect()
+        cur = self.con.cursor()
+        try:
+            dtpubdate = dateutil.parser.isoparse(pubdate)
+            data = (name, channel, videoid, title, 0, dtpubdate.isoformat(), "" )
+            datalist = [data]
+            cur.executemany("INSERT INTO youtube VALUES(?, ?, ?, ?, ?, ?, ?)", datalist)
+            self.commit()
+        except sqlite3.IntegrityError as ie:
+            print(f"{videoid} already exists with {title.encode('cp1252', errors='ignore')} error {ie}")
+            
+        except sqlite3.OperationalError as oe:
+            print(f"Insert error {oe}")
+        self.close()
+
+    def select(self, ):
+        self.connect()
+        cur = self.con.cursor()
+        for row in self.con.execute("SELECT name, channel, videoid, title, isposted, pubdate, postdate from youtube"):
+            name, channel, videoid, title, isposted, pubdate, postdate = row
+            print(f"name {name} channel {channel}, videoid {videoid}, \
+                  title{title.encode('cp1252', errors='ignore')}, \
+                  isposted {isposted} , pubdate {pubdate} , postdate {postdate} ")  
+        self.close()
+                    
+
 
 # Prints the output in the console and into the '_list.txt' file.
 class Logger:
@@ -111,21 +154,62 @@ class Html2JSON:
         return self.channel_url
  
 
-sys.stdout = Logger(path)
+sys.stdout = Logger(logpath)
 
-# Strip the: "https://www.youtube.com/channel/"
-channel_url = "https://www.youtube.com/@ExMuslimSameer"
+youtube_data = YoutubeData( config['DEFAULT']['dbname'] )
+
+#youtube_data.create_youtube_table()
+youtube_data.select()
+
+import googleapiclient.discovery
+
+print(f" developerKey {config['DEFAULT']['developerKey']} " )
+youtube = googleapiclient.discovery.build(
+    "youtube", "v3", developerKey=config['DEFAULT']['developerKey']
+)
 
 
-h2j = Html2JSON(channel_url)
-channel_id_list = [ Html2JSON(channel_url).channel_id for channel_url in channel_List]
-print(f"channel_id_list : {channel_id_list}")
-for id in channel_id_list:
-    videos = scrapetube.get_channel(channel_id=id)
+#h2j = Html2JSON(channel_List)
+channel_id_list = [ (Html2JSON(channel_url).channel_id,channel_url) for channel_url in channel_List]
+
+for id,churl in channel_id_list:
+    if id is None:
+        continue
+    try:
+        videos = list(scrapetube.get_channel(channel_id=id))
+    except Exception as e:
+        print(f"id : {id} err : {e}")
+        
     for video in videos:
-        print(f"video : {video['title']}")
-        print(f"descriptionSnippet: {video['descriptionSnippet']}")
+        try:
+            print(f"videoId {video['videoId']} \n")
+        except Exception as e:
+            print(f"video : {video} ")
+            continue
+        request = youtube.videos().list(
+            part="snippet",
+            id=video['videoId']
+        )
+        response = request.execute()
+        print(response['items'][0]['snippet']['publishedAt'])
+        
+        #print(f" publishedTimeText {video['publishedTimeText']} \n")
+        title=""
+        #print(f"keys: {video.keys()}")
+        for text in video['title']['runs']:           
+            title += str(text['text']) #.encode('unicode'))
+        #print(f"text title: {title.encode('cp1252', errors='ignore')} \n")
+        youtube_data.Insert(name = churl, 
+                            channel = id, 
+                            videoid = video['videoId'], 
+                            title = title, 
+                       pubdate = response['items'][0]['snippet']['publishedAt'], 
+                       postdate = "")
+            
+        #print(f"desctxt: {desctxt.encode('cp1252', errors='ignore')}\n")
         print("https://www.youtube.com/watch?v="+str(video['videoId']))
-        break
-        #print("https://www.youtube.com/watch?v="+str(video['videoId']))
-    #    print(video['videoId'])
+    #break
+    #print("https://www.youtube.com/watch?v="+str(video['videoId']))
+#    print(video['videoId'])
+
+youtube_data.select()
