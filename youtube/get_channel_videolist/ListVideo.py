@@ -45,15 +45,20 @@ def get_channelurl_from_meta(meta):
 class YoutubeData:
     def __init__(self, dbname):
         self.dbname = dbname
+        self.con = None
 
     def connect(self,):
         self.con = sqlite3.connect(self.dbname)
+
+    def isConnectected(self,):
+        return self.con is not None
         
     def commit(self,):
         self.con.commit()
 
     def close(self,):
         self.con.close()
+        self.con = None
         
         
     def create_youtube_table(self, ):
@@ -82,7 +87,8 @@ class YoutubeData:
                title, 
                pubdate, 
                postdate ):
-        self.connect()
+        if not self.isConnectected():
+            self.connect()
         cur = self.con.cursor()
         try:
             dtpubdate = dateutil.parser.isoparse(pubdate)
@@ -95,10 +101,12 @@ class YoutubeData:
             
         except sqlite3.OperationalError as oe:
             print(f"Insert error {oe}")
-        self.close()
+        #self.close()
 
     def select(self, ):
-        self.connect()
+        if not self.isConnectected():
+            self.connect()
+        
         cur = self.con.cursor()
         for row in self.con.execute("SELECT name, channel, videoid, title, isposted, pubdate, postdate from youtube"):
             name, channel, videoid, title, isposted, pubdate, postdate = row
@@ -107,6 +115,13 @@ class YoutubeData:
                   isposted {isposted} , pubdate {pubdate} , postdate {postdate} ")  
         self.close()
                     
+    def count(self, videoid):
+        if not self.isConnectected():
+            self.connect()
+        cur = self.con.cursor()
+        cur.execute("SELECT count(*) from youtube where videoid = ?", (videoid,))
+        numberOfRows = cur.fetchone()[0]
+        return numberOfRows
 
 
 # Prints the output in the console and into the '_list.txt' file.
@@ -123,6 +138,25 @@ class Logger:
     def flush(self):
         self.console.flush()
         self.file.flush()
+
+class DataLogger:
+ 
+    def __init__(self, filename):
+        self.file = open(filename, 'w')
+ 
+    def Insert(self, 
+               name,
+               channel, 
+               videoid, 
+               title, 
+               pubdate, 
+               postdate ):
+        wstr = f"{name},{channel},{videoid},{title},{pubdate},{postdate}"
+        self.file.write(wstr)
+ 
+    def flush(self):
+        self.file.flush()
+
 
 class Html2JSON:
  
@@ -159,7 +193,7 @@ sys.stdout = Logger(logpath)
 youtube_data = YoutubeData( config['DEFAULT']['dbname'] )
 
 #youtube_data.create_youtube_table()
-youtube_data.select()
+#youtube_data.select()
 
 import googleapiclient.discovery
 
@@ -184,14 +218,14 @@ for id,churl in channel_id_list:
         try:
             print(f"videoId {video['videoId']} \n")
         except Exception as e:
-            print(f"video : {video} ")
+            print(f"video : {video} error {e}")
             continue
-        request = youtube.videos().list(
-            part="snippet",
-            id=video['videoId']
-        )
+        if youtube_data.count(video['videoId'])>0:
+            print(f" Already present {video['videoId']} ")
+            continue
+        request = youtube.videos().list(part="snippet",id=video['videoId'])
         response = request.execute()
-        print(response['items'][0]['snippet']['publishedAt'])
+        #print(response['items'][0]['snippet']['publishedAt'])
         
         #print(f" publishedTimeText {video['publishedTimeText']} \n")
         title=""
@@ -203,11 +237,12 @@ for id,churl in channel_id_list:
                             channel = id, 
                             videoid = video['videoId'], 
                             title = title, 
-                       pubdate = response['items'][0]['snippet']['publishedAt'], 
+                       pubdate = str(datetime.now()), #response['items'][0]['snippet']['publishedAt'], 
                        postdate = "")
             
         #print(f"desctxt: {desctxt.encode('cp1252', errors='ignore')}\n")
         print("https://www.youtube.com/watch?v="+str(video['videoId']))
+    youtube_data.close()
     #break
     #print("https://www.youtube.com/watch?v="+str(video['videoId']))
 #    print(video['videoId'])
